@@ -1,18 +1,20 @@
 #!/bin/bash
 #
 # Author: Juha Leivo
-# Version: 1
-# Date: 2023-04-29
+# Version: 2
+# Date: 2023-05-05
 #
 # History
 #   1 - 2023-04-29, initial write, monitors folder, converts items to flac
+#   2 - 2023-05-05, Minor typo fixed, improved task/note detection, corrected
+#       bug in detecting files with spaces in their names 
 
 readonly print_to_screen=1
-readonly obsidian_dir='/mnt/c/Users/juha.LHE/Sync/Obsidian'
+readonly obsidian_dir='/home/syncthing/Sync/Obsidian'
 
 source /opt/pythonvenv/google/bin/activate
 source /opt/scripts/shared_functions.sh
-export GOOGLE_APPLICATION_CREDENTIALS='/mnt/c/temp/text-to-speech.json'
+export GOOGLE_APPLICATION_CREDENTIALS='/opt/pythonvenv/google/text-to-speech.json'
 
 ################################# FUNCTIONS ####################################
 debug=0
@@ -95,18 +97,32 @@ function monitor_directory() {
         if [[ "${file##*.}" == "m4a" ]]; then
             flac_name=${file%.*}
             echo "Converting file: $file"
-            ffmpeg -i "$1/$file" -vn -acodec flac "/tmp/$flac_name.flac" -loglevel fatal || { log "ERROR: ffmpeg failed message" "${print_to_screen}"; exit 1; }
-            echo "Converting file: $file to text via Google text-to-speech"
-            result=$(/opt/scripts/text_to_speech.py -f "/tmp/$flac_name.flac" || { log "ERROR: test.py failed message" "${print_to_screen}"; exit 1; })
-            if [[ $result == *muistiinpano* ]]; then
+            ffmpeg -i "$1/$file" -vn -acodec flac "/tmp/$flac_name.flac" -loglevel fatal \
+            || { log "ERROR: ffmpeg failed" "${print_to_screen}"; send_mail "" "$file" 'leivo.0303@nozbe.com' "ffmpeg failed"; continue; }
+            echo "Converting file: $flac_name.flac to text via Google text-to-speech"
+            result=$(/opt/scripts/text_to_speech.py -f "/tmp/$flac_name.flac" || { log "ERROR: Text-to-speech failed" "${print_to_screen}"; })
+            # if first word in the variable is "muistiinpano", then it's a note
+            # otherwise it's a tas
+            # get the first word from the variable result
+            task=$(echo $result|cut -d' ' -f2)
+            if [[ $task == *muistiinpano* ]]; then
                 # echo everything after the first space in the variable result
-                echo $result | cut -d' ' -f2- > "$obsidian_dir/inbox/$flac_name.md"
+                echo "It's a note, adding to Obsidian"
+                echo $result | cut -d' ' -f2- > "$obsidian_dir/Inbox/$flac_name.md"
                 mv "/tmp/$flac_name.flac" "$obsidian_dir/05 - media/"
-                echo "[[$flac_name.flac]]" >> "$obsidian_dir/inbox/$flac_name.md"
+                echo "[[$flac_name.flac]]" >> "$obsidian_dir/Inbox/$flac_name.md"
                 rm "$1/$file"
             else 
-                send_mail "$1/$file" "$result" 'leivo.0303@nozbe.me' $flac_name
-                rm "$1/$file"
+                echo "It's a task or unknown thing, sending to Nozbe"
+                # the mail function uses also file parameter and messes it up somehow
+                # this is a dirty workaround to that problem. Mail application also
+                # seems to have a problem with spaces in filenames, so we replace them
+                # with underscores.
+                nospacefile=${file// /_}
+                mv "$1/$file" "/tmp/$nospacefile"
+                send_mail "/tmp/$nospacefile" "empty" 'leivo.0303@nozbe.me' "$result"
+                rm "/tmp/$flac_name.flac"
+                rm "/tmp/$nospacefile"
             fi
         fi
     done
