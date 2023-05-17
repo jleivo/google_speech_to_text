@@ -29,6 +29,10 @@ pip install -r requirements.txt
 
 copy shared_functions.sh to /opt/scripts
 
+### Google cloud project
+
+TBD
+
 ## Usage
 
 1. configure Syncthing folders (audio recordings & Obsidian)
