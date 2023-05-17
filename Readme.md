@@ -44,11 +44,12 @@ TBD
 ## Limits
 
 We are using synchronious records to the max translate limit is ~1 min (ref https://cloud.google.com/speech-to-text/quotas)
+
 Google python script requires X64 platform, doesn't work on ARM (Raspberrypi)
 
 ## Improvement ideas
-- Analyze file lenght and send it to storage if needed
-- Move to Nozbe for teams, due to (better) API.
-- Containerize the tool
-- Make this work on Raspberrypi
-- write systemctl definition for the script
+- [ ] Analyze file lenght and send it to storage if needed
+- [ ] Move to Nozbe for teams, due to (better) API.
+- [ ] Containerize the tool
+- [ ] Make this work on Raspberrypi
+- [ ] write systemctl definition for the script
