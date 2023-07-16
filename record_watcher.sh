@@ -110,7 +110,7 @@ function monitor_directory() {
                 echo "It's a note, adding to Obsidian"
                 echo $result | cut -d' ' -f2- > "$obsidian_dir/Inbox/$flac_name.md"
                 mv "/tmp/$flac_name.flac" "$obsidian_dir/05 - media/"
-                echo "\![[$flac_name.flac]]" >> "$obsidian_dir/Inbox/$flac_name.md"
+                echo "![[$flac_name.flac]]" >> "$obsidian_dir/Inbox/$flac_name.md"
                 rm "$1/$file"
             else 
                 echo "It's a task or unknown thing, sending to Nozbe"
