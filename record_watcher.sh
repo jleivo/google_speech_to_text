@@ -46,8 +46,9 @@ function get_arguments() {
 function print_usage() {
 
     echo ''
-    echo 'Companion script to Googl text-to-speech, which monitors directory'
-    echo 'for new files and converts them to flac, then sends them to translated' 
+    echo 'Companion script to text-to-speech-LLM, which monitors directory'
+    echo 'for new files which is then send to be translated. Results of'
+    echo 'the translation is defines how the data is handled' 
     echo ''
     echo 'Usage'
     echo ''
@@ -64,9 +65,9 @@ function print_usage() {
 function log() {
 
   if [[ "${2}" -eq 1 ]]; then 
-    echo ${0##*/}: "${1}"
+    echo "${0##*/}": "${1}"
   fi
-  logger ${0##*/}: "${1}"
+  logger "${0##*/}": "${1}"
 }
 
 function init() {
@@ -76,7 +77,7 @@ function init() {
   # check if we have the programs
   for PROGRAM in inotifywait ffmpeg; do
     if ! hash "${PROGRAM}" 2>/dev/null; then
-      log "ERROR: command not found in PATH: %s\n "${PROGRAM}"" "${print_to_screen}"
+      log "ERROR: command not found in PATH: %s\n ${PROGRAM}" "${print_to_screen}"
       program_fail=1
     fi
   done
@@ -95,14 +96,10 @@ function monitor_directory() {
     while read -r dir action file; do
         # check if the contents of the variable file ends in m4a
         if [[ "${file##*.}" == "m4a" ]]; then
-            flac_name=${file%.*}
-            echo "Converting file: $file"
-            ffmpeg -i "$1/$file" -vn -acodec flac "/tmp/$flac_name.flac" -loglevel fatal \
-            || { log "ERROR: ffmpeg failed" "${print_to_screen}"; send_mail "" "$file" 'leivo.0303@nozbe.com' "ffmpeg failed"; continue; }
-            echo "Converting file: $flac_name.flac to text via Google text-to-speech"
-            result=$(/opt/scripts/text_to_speech.py -f "/tmp/$flac_name.flac" || { log "ERROR: Text-to-speech failed" "${print_to_screen}"; })
+            echo "Converting file: $file to text via OpenAI-whisper LLM"
+            result=$(/opt/scripts/LLM_text_to_speech.py -f "$file" || { log "ERROR: Text-to-speech failed" "${print_to_screen}"; })
             # if first word in the variable is "muistiinpano", then it's a note
-            # otherwise it's a tas
+            # otherwise it's a task
             # get the first word from the variable result
             task=$(echo "$result"|cut -d' ' -f2)
             if [[ $task == *muistiinpano* ]]; then
