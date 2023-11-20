@@ -101,13 +101,13 @@ function monitor_directory() {
             # if first word in the variable is "muistiinpano", then it's a note
             # otherwise it's a task
             # get the first word from the variable result
-            task=$(echo "$result"|cut -d' ' -f2)
+            task=$(echo "$result"|cut -d' ' -f1)
             if [[ $task == *muistiinpano* ]]; then
                 # echo everything after the first space in the variable result
                 echo "It's a note, adding to Obsidian"
-                echo "$result" | cut -d' ' -f2- > "$obsidian_dir/Inbox/$flac_name.md"
-                mv "/tmp/$flac_name.flac" "$obsidian_dir/05 - media/"
-                echo "![[$flac_name.flac]]" >> "$obsidian_dir/Inbox/$flac_name.md"
+                echo "$result" > "$obsidian_dir/Inbox/${file##*}.md"
+                mv "${file}" "$obsidian_dir/05 - media/"
+                echo "![[$file]]" >> "$obsidian_dir/Inbox/${file##*}.md"
                 rm "$1/$file"
             else 
                 echo "It's a task or unknown thing, sending to Nozbe"
@@ -118,7 +118,6 @@ function monitor_directory() {
                 nospacefile=${file// /_}
                 mv "$1/$file" "/tmp/$nospacefile"
                 send_mail "/tmp/$nospacefile" "empty" 'leivo.0303@nozbe.me' "$result"
-                rm "/tmp/$flac_name.flac"
                 rm "/tmp/$nospacefile"
             fi
         fi
