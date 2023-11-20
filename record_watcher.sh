@@ -88,6 +88,14 @@ function init() {
 
 }
 
+function text_to_speech() {
+  
+  scp -P 2222 "${1}" llm@tupinsanip04.intra.leivo:/tmp/
+  results=$(ssh -p 2222 llm@tupinsanip04.intra.leivo "/opt/LLM/OpenAI-whisper/LLM_wrapper.sh -f \"/tmp/${1##*/}\"")
+
+  echo "$results"
+}
+
 function monitor_directory() {
 
     echo "Monitoring directory: ${1}"
@@ -96,8 +104,9 @@ function monitor_directory() {
     while read -r dir action file; do
         # check if the contents of the variable file ends in m4a
         if [[ "${file##*.}" == "m4a" ]]; then
-            echo "Converting file: $file to text via OpenAI-whisper LLM"
-            result=$(/opt/scripts/LLM_text_to_speech.py -f "$file" || { log "ERROR: Text-to-speech failed" "${print_to_screen}"; })
+            echo "Converting file: ${file} to text via OpenAI-whisper LLM"
+            result=$(text_to_speech "${1}/${file}")
+            #result=$(python3 ./LLM_text_to_speech.py -f "${1}/${file}" || { log "ERROR: Text-to-speech failed" "${print_to_screen}"; })
             # if first word in the variable is "muistiinpano", then it's a note
             # otherwise it's a task
             # get the first word from the variable result
@@ -106,9 +115,9 @@ function monitor_directory() {
                 # echo everything after the first space in the variable result
                 echo "It's a note, adding to Obsidian"
                 echo "$result" > "$obsidian_dir/Inbox/${file##*}.md"
-                mv "${file}" "$obsidian_dir/05 - media/"
+                mv "${1}/${file}" "$obsidian_dir/05 - media/"
                 echo "![[$file]]" >> "$obsidian_dir/Inbox/${file##*}.md"
-                rm "$1/$file"
+                rm "${1}/${file}"
             else 
                 echo "It's a task or unknown thing, sending to Nozbe"
                 # the mail function uses also file parameter and messes it up somehow
