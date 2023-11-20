@@ -1,13 +1,15 @@
 #!/bin/bash
 #
 # Author: Juha Leivo
-# Version: 2
-# Date: 2023-05-05
+# Version: 3
+# Date: 2023-11-20
 #
 # History
 #   1 - 2023-04-29, initial write, monitors folder, converts items to flac
 #   2 - 2023-05-05, Minor typo fixed, improved task/note detection, corrected
 #       bug in detecting files with spaces in their names 
+#   3 - 2023-11-20 Implemented LLM based speech-to-text, Shellcheck done to the
+#       script
 
 readonly print_to_screen=1
 readonly obsidian_dir='/home/syncthing/Sync/Obsidian'
@@ -91,9 +93,9 @@ function init() {
 function text_to_speech() {
   
   scp -P 2222 "${1}" llm@tupinsanip04.intra.leivo:/tmp/
-  results=$(ssh -p 2222 llm@tupinsanip04.intra.leivo "/opt/LLM/OpenAI-whisper/LLM_wrapper.sh -f \"/tmp/${1##*/}\"")
-
+  results=$(ssh -p 2222 llm@tupinsanip04.intra.leivo "source /opt/LLM/OpenAI-whisper/bin/activate && /opt/LLM/OpenAI-whisper/LLM_text_to_speech.py -f \"/tmp/${1##*/}\"")
   echo "$results"
+
 }
 
 function monitor_directory() {
