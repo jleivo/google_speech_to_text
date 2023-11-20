@@ -12,9 +12,8 @@
 readonly print_to_screen=1
 readonly obsidian_dir='/home/syncthing/Sync/Obsidian'
 
-source /opt/pythonvenv/google/bin/activate
+# shellcheck source=/dev/null
 source /opt/scripts/shared_functions.sh
-export GOOGLE_APPLICATION_CREDENTIALS='/opt/pythonvenv/google/text-to-speech.json'
 
 ################################# FUNCTIONS ####################################
 debug=0
@@ -91,8 +90,9 @@ function init() {
 function monitor_directory() {
 
     echo "Monitoring directory: ${1}"
+    # shellcheck disable=SC2034  # Unused variables left for readability
     inotifywait -m "$1" -e create -e moved_to |
-    while read dir action file; do
+    while read -r dir action file; do
         # check if the contents of the variable file ends in m4a
         if [[ "${file##*.}" == "m4a" ]]; then
             flac_name=${file%.*}
@@ -104,11 +104,11 @@ function monitor_directory() {
             # if first word in the variable is "muistiinpano", then it's a note
             # otherwise it's a tas
             # get the first word from the variable result
-            task=$(echo $result|cut -d' ' -f2)
+            task=$(echo "$result"|cut -d' ' -f2)
             if [[ $task == *muistiinpano* ]]; then
                 # echo everything after the first space in the variable result
                 echo "It's a note, adding to Obsidian"
-                echo $result | cut -d' ' -f2- > "$obsidian_dir/Inbox/$flac_name.md"
+                echo "$result" | cut -d' ' -f2- > "$obsidian_dir/Inbox/$flac_name.md"
                 mv "/tmp/$flac_name.flac" "$obsidian_dir/05 - media/"
                 echo "![[$flac_name.flac]]" >> "$obsidian_dir/Inbox/$flac_name.md"
                 rm "$1/$file"
